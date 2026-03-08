@@ -1,70 +1,191 @@
-<h2>AI Interview</h2>
+<!DOCTYPE html>
+<html>
 
-<label>Select Mode:</label>
-<select id="mode" onchange="loadQuestion()">
-    <option value="technical">Technical</option>
-    <option value="hr">HR</option>
-</select>
+<head>
 
-<h3 id="question"></h3>
+    <title>AI Interview</title>
 
-<input type="text" id="answer" placeholder="Type your answer here">
-<button onclick="submitAnswer()">Submit</button>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            padding: 40px;
+        }
 
-<h3 id="result"></h3>
+        input,
+        select,
+        button {
+            padding: 10px;
+            margin: 10px;
+        }
 
-<script>
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+        }
+    </style>
 
-let currentQuestion = "";
+</head>
 
-async function loadQuestion() {
-    const mode = document.getElementById("mode").value;
+<body>
 
-    let url = mode === "technical"
-        ? "http://127.0.0.1:8000/get-technical-question"
-        : "http://127.0.0.1:8000/get-hr-question";
+    <h2>AI Interview Platform</h2>
 
-    const response = await fetch(url);
-    const data = await response.json();
+    <label>Username</label>
+    <input type="text" id="username">
 
-    currentQuestion = data.question;
-    document.getElementById("question").innerText = data.question;
-}
+    <br>
 
-// Page load
-window.onload = loadQuestion;
+    <label>Select Mode</label>
 
-async function submitAnswer() {
-    const answer = document.getElementById("answer").value;
-    const mode = document.getElementById("mode").value;
+    <select id="mode" onchange="loadQuestion()">
 
-    const response = await fetch("http://127.0.0.1:8000/submit-answer", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            username: "shivm",
-            mode: mode,
-            question: currentQuestion,
-            answer: answer
-        })
-    });
+        <option value="technical">Technical</option>
+        <option value="hr">HR</option>
 
-    const data = await response.json();
+    </select>
 
-    document.getElementById("result").innerHTML = `
-        <p><b>Score:</b> ${data.score}</p>
-        <p><b>Feedback:</b> ${data.feedback}</p>
-    `;
+    <h3 id="question"></h3>
 
-    //  Answer box clear karo
-    document.getElementById("answer").value = "";
+    <input type="text" id="answer" placeholder="Type answer">
 
-    //  2 second baad next question load hoga
-    setTimeout(() => {
-        loadQuestion();
-    }, 2000);
-}
+    <button onclick="submitAnswer()">Submit</button>
 
-</script>
+    <button onclick="loadQuestion()">Next Question</button>
+
+    <button onclick="showLeaderboard()">Leaderboard</button>
+
+    <button onclick="startVoice()"> Speak Answer</button>
+
+    <h3 id="result"></h3>
+
+    <div id="leaderboard"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <canvas id="scoreChart"></canvas>
+
+    <script>
+
+        let currentQuestion = ""
+
+        async function loadQuestion() {
+
+            const mode = document.getElementById("mode").value
+
+            let url = mode === "technical"
+                ? "http://127.0.0.1:8000/get-technical-question"
+                : "http://127.0.0.1:8000/get-hr-question"
+
+            const res = await fetch(url)
+
+            const data = await res.json()
+
+            currentQuestion = data.question
+
+            document.getElementById("question").innerText = data.question
+
+        }
+
+        window.onload = loadQuestion
+
+
+        async function submitAnswer() {
+
+            const username = document.getElementById("username").value
+
+            const answer = document.getElementById("answer").value
+
+            const mode = document.getElementById("mode").value
+
+            const response = await fetch("http://127.0.0.1:8000/submit-answer", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    username: username,
+                    mode: mode,
+                    question: currentQuestion,
+                    answer: answer
+
+                })
+
+            })
+
+            const data = await response.json()
+
+            document.getElementById("result").innerHTML =
+
+                `Score: ${data.score} <br> Feedback: ${data.feedback}`
+
+            document.getElementById("answer").value = ""
+
+        }
+
+
+        async function showLeaderboard() {
+
+            const res = await fetch("http://127.0.0.1:8000/leaderboard")
+
+            const data = await res.json()
+
+            let html = "<h3>Leaderboard</h3>"
+
+            data.leaderboard.forEach(user => {
+
+                html += `<p>${user.rank}. ${user.username} ⭐ ${user.average_score}</p>`
+
+            })
+
+            document.getElementById("leaderboard").innerHTML = html
+
+        }
+        async function loadDashboard() {
+
+            const username = document.getElementById("username").value
+
+            const res = await fetch(`http://127.0.0.1:8000/user-dashboard/${username}`)
+
+            const data = await res.json()
+
+            const ctx = document.getElementById("scoreChart")
+
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: ["HR", "Technical"],
+                    datasets: [{
+                        label: "Average Score",
+                        data: [data.hr_average, data.technical_average]
+                    }]
+                }
+            })
+
+        }
+        function startVoice() {
+
+            const recognition = new webkitSpeechRecognition()
+
+            recognition.lang = "en-US"
+
+            recognition.start()
+
+            recognition.onresult = function (event) {
+
+                document.getElementById("answer").value =
+                    event.results[0][0].transcript
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>
