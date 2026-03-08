@@ -67,6 +67,7 @@
 
     <script>
 
+
         let currentQuestion = ""
 
         async function loadQuestion() {
@@ -84,7 +85,7 @@
             currentQuestion = data.question
 
             document.getElementById("question").innerText = data.question
-
+            // document.getElementById("answer").value = ""
         }
 
         window.onload = loadQuestion
@@ -93,38 +94,28 @@
         async function submitAnswer() {
 
             const username = document.getElementById("username").value
-
             const answer = document.getElementById("answer").value
-
             const mode = document.getElementById("mode").value
 
             const response = await fetch("http://127.0.0.1:8000/submit-answer", {
-
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
-
                     username: username,
                     mode: mode,
                     question: currentQuestion,
                     answer: answer
-
                 })
-
             })
 
             const data = await response.json()
 
-            document.getElementById("result").innerHTML =
+            document.getElementById("result").innerText =
+                "Score: " + data.score + " | " + data.ai_feedback
 
-                `Score: ${data.score} <br> Feedback: ${data.feedback}`
-
-            document.getElementById("answer").value = ""
-
+            loadDashboard()
         }
 
 
@@ -143,8 +134,9 @@
             })
 
             document.getElementById("leaderboard").innerHTML = html
-
         }
+
+
         async function loadDashboard() {
 
             const username = document.getElementById("username").value
@@ -165,8 +157,9 @@
                     }]
                 }
             })
-
         }
+
+
         function startVoice() {
 
             const recognition = new webkitSpeechRecognition()
@@ -184,6 +177,7 @@
 
         }
 
+    </script>
     </script>
 
 </body>
