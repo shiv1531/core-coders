@@ -12,61 +12,139 @@
             padding: 40px;
         }
 
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
         input,
         select,
+        textarea,
         button {
             padding: 10px;
-            margin: 10px;
+            margin: 10px 5px;
         }
 
         button {
             background: #007bff;
             color: white;
             border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .tabs {
+            margin: 20px 0;
+        }
+
+        .tabs button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .tab-content {
+            margin-top: 20px;
         }
     </style>
 
 </head>
 
 <body>
+    <div class="container">
 
-    <h2>AI Interview Platform</h2>
+        <h1>AI Interview Platform</h1>
 
-    <label>Username</label>
-    <input type="text" id="username">
+        <!-- USER DETAILS -->
+        <div class="card">
+            <h3>User Details</h3>
 
-    <br>
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Enter username">
 
-    <label>Select Mode</label>
+            <label>Select Mode</label>
 
-    <select id="mode" onchange="loadQuestion()">
+            <select id="mode" onchange="loadQuestion()">
+                <option value="technical">Technical</option>
+                <option value="hr">HR</option>
+            </select>
 
-        <option value="technical">Technical</option>
-        <option value="hr">HR</option>
+        </div>
 
-    </select>
+        <div class="tabs">
+            <button onclick="openTab('quiz')">Technical Quiz</button>
+            <button onclick="openTab('mock')">AI Mock Interview</button>
+        </div>
 
-    <h3 id="question"></h3>
+        <div id="quiz" class="tab-content">
 
-    <input type="text" id="answer" placeholder="Type answer">
+            <h2>Technical Quiz</h2>
 
-    <button onclick="submitAnswer()">Submit</button>
+            <h3 id="question">Question will appear here</h3>
 
-    <button onclick="loadQuestion()">Next Question</button>
+            <input type="text" id="answer" placeholder="Type answer">
 
-    <button onclick="showLeaderboard()">Leaderboard</button>
+            <button onclick="submitAnswer()">Submit</button>
+            <button onclick="loadQuestion()">Next Question</button>
+            <button onclick="showLeaderboard()">Leaderboard</button>
+            <button onclick="startVoice()">Speak Answer</button>
 
-    <button onclick="startVoice()"> Speak Answer</button>
+            <h3 id="result"></h3>
 
-    <h3 id="result"></h3>
+        </div>
 
-    <div id="leaderboard"></div>
+        <div id="mock" class="tab-content" style="display:none">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <canvas id="scoreChart"></canvas>
+            <h2>AI Mock Interview</h2>
 
+            <button onclick="startMockInterview()">Start AI Mock Interview</button>
+
+            <h3 id="mock-question"></h3>
+
+            <textarea id="mockAnswer" placeholder="Type textarea id=" mockAnswer "
+                placeholder="Type interview answer..." rows="5" style="width: 704px; height: 70px;"></textarea>
+
+            <button onclick="submitMockAnswer()">Submit Interview Answer</button>
+
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div class="card">
+
+            <div id="leaderboard"></div>
+
+            <canvas id="scoreChart"></canvas>
+
+        </div>
+
+    </div>
     <script>
 
+        function openTab(tabName) {
+
+            document.getElementById("quiz").style.display = "none"
+            document.getElementById("mock").style.display = "none"
+
+            document.getElementById(tabName).style.display = "block"
+
+        }
+
+        let chart = null;
 
         let currentQuestion = ""
 
@@ -96,6 +174,11 @@
             const username = document.getElementById("username").value
             const answer = document.getElementById("answer").value
             const mode = document.getElementById("mode").value
+
+            if (!username || !answer) {
+                alert("Please enter username and answer")
+                return
+            }
 
             const response = await fetch("http://127.0.0.1:8000/submit-answer", {
                 method: "POST",
@@ -147,7 +230,11 @@
 
             const ctx = document.getElementById("scoreChart")
 
-            new Chart(ctx, {
+            if (chart) {
+                chart.destroy()
+            }
+
+            chart = new Chart(ctx, {
                 type: "bar",
                 data: {
                     labels: ["HR", "Technical"],
@@ -158,7 +245,30 @@
                 }
             })
         }
+        async function startMockInterview() {
+            const response = await fetch("http://127.0.0.1:8000/start-mock-interview");
+            const data = await response.json();
 
+            document.getElementById("mock-question").innerText = data.question;
+        }
+        async function submitMockAnswer() {
+
+            const answer = document.getElementById("mockAnswer").value;
+
+            const response = await fetch("http://127.0.0.1:8000/mock-interview-answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    answer: answer
+                })
+            });
+
+            const data = await response.json();
+
+            document.getElementById("mock-question").innerText = data.next_question;
+        }
 
         function startVoice() {
 
@@ -177,7 +287,7 @@
 
         }
 
-    </script>
+
     </script>
 
 </body>
