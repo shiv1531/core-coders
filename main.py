@@ -6,11 +6,15 @@ import random
 import re
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
+from pydantic import BaseModel
 
-client = Groq(api_key="")
+client = Groq(api_key=" ")
 
 app = FastAPI()
 create_table()
+
+class Answer(BaseModel):
+    answer: str
 
 app.add_middleware(
     CORSMiddleware,
@@ -269,3 +273,45 @@ def leaderboard():
         rank+=1
 
     return {"leaderboard":data}
+
+@app.get("/start-mock-interview")
+async def start_mock_interview():
+    prompt = "Act as a technical interviewer and ask the first interview question for a software developer."
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a technical interviewer."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    question = response.choices[0].message.content
+    return {"question": question}
+
+@app.post("/mock-interview-answer")
+async def mock_interview_answer(data: Answer):
+
+    prompt = f"""
+    Candidate answered this interview question.
+
+    Answer: {data.answer}
+
+    Evaluate the answer and:
+    1. Give short feedback
+    2. Ask the next technical interview question
+    """
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a technical interviewer."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    ai_response = response.choices[0].message.content
+
+    return {
+        "next_question": ai_response
+    }
